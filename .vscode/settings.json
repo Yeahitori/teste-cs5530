@@ -1,0 +1,42 @@
+{
+  "C_Cpp_Runner.cCompilerPath": "/Users/luisfernando/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+  "C_Cpp_Runner.cppCompilerPath": "/Users/luisfernando/.platformio/packages/toolchain-atmelavr/bin/avr-g++",
+  "C_Cpp_Runner.debuggerPath": "/Users/luisfernando/.platformio/packages/toolchain-atmelavr/bin/avr-gdb",
+  "C_Cpp_Runner.cStandard": "c11",
+  "C_Cpp_Runner.cppStandard": "c++20",
+  "C_Cpp_Runner.msvcBatchPath": "",
+  "C_Cpp_Runner.useMsvc": false,
+  "C_Cpp_Runner.warnings": [
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic"
+  ],
+  "C_Cpp_Runner.enableWarnings": true,
+  "C_Cpp_Runner.warningsAsError": false,
+  "C_Cpp_Runner.compilerArgs": [],
+  "C_Cpp_Runner.linkerArgs": [],
+  "C_Cpp_Runner.includePaths": [
+    "/Users/luisfernando/vscode/teste-cs5530/include",
+    "/Users/luisfernando/vscode/teste-cs5530/src",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/cores/arduino",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/variants/mega",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+    "/Users/luisfernando/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+    ""
+  ],
+  "C_Cpp_Runner.includeSearch": [
+    "*",
+    "**/*"
+  ],
+  "C_Cpp_Runner.excludeSearch": [
+    "**/build",
+    "**/build/**",
+    "**/.*",
+    "**/.*/**",
+    "**/.vscode",
+    "**/.vscode/**"
+  ]
+}

@@ -111,6 +111,9 @@ CS Rising to SDO Hi-Z                     t9    150 ns (MAX)
 #define REG_CONFIG_A0            1UL << 23     //Output Latch bit          01 A1 = 0, A0 = 1 // 11 A1 = 1, A0 = 1
 #define REG_CONFIG_FRS           1UL << 19     //Filter Rate Select        0 Use the default output word rates. 1 Scale all output word rates and their corresponding filter characteristics by a factor of 5/6.
 #define REG_CONFIG_OCD           1UL << 9      //Open Circuit Detect Bit   0 Normal mode. 1 Activate current source (Used for thermocouple).
+#define REG_CONFIG_UNIPOLAR          1UL << 10     // Manda 1 e desloca 10 para a esquerda. 1 Select Unipolar mode.
+#define REG_CONFIG_BIPOLAR           0UL << 10     // Manda 0 e desloca 10 para a esquerda. 0 Select Bipolar mode.
+#define REG_DATA_OF              1UL << 3      // Manda 1 e desloca 03 posicoes para a esquerda
 
 //===================================================================================================================================================//
 
@@ -165,9 +168,6 @@ Bit      WR(FRS = 0) WR(FRS = 1)
 //===================================================================================================================================================//
 
 //Unipolar / Bipolar
-#define CS5530_UNIPOLAR          1UL << 10     // Manda 1 e desloca 10 para a esquerda. 1 Select Unipolar mode.
-#define CS5530_BIPOLAR           0UL << 10     // Manda 0 e desloca 10 para a esquerda. 0 Select Bipolar mode.
-#define REG_DATA_OF              1UL << 3      // Manda 1 e desloca 03 posicoes para a esquerda
 
 //===================================================================================================================================================//
 
@@ -200,7 +200,7 @@ No arduino MEGA 2560, os pinos SPI são definidos como:
 #define CMD_CONFIG_READ         0x0B // Manda 0000 1011
 #define CMD_CONFIG_WRITE        0x03 // Manda 0000 0011
 
-#define CMD_CONVERSION_SIGLE    0x80 // Manda 1000 0000
+#define CMD_CONVERSION_SINGLE    0x80 // Manda 1000 0000
 #define CMD_CONVERSION_CONTINU  0xC0 // Manda 1100 0000
 #define CMD_SYS_OFFSET_CALI     0x85 // Manda 1000 0101
 #define CMD_SYS_GAIN_CALI       0x86 // Manda 1000 0110
@@ -239,9 +239,9 @@ public:
     bool isReady (void);                          // Define que o conversor está pronto
     bool reset (void);                            // Função de RESET
     u32 readWeightsclae ();                       // Define a chamada de Leitura da conversao
+    u32 singleConversion();
     //===================================================================================================================================================//
 
-private:
     SPISettings _spiSettings;
     SPIClass *_spi;
     int _ss;

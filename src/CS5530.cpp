@@ -123,13 +123,13 @@ Esta Operação Está validada.
 
 // Funções Operacionais:
 
-void CS5530::writeRegister(u8 reg, u32 dat) {
+void CS5530::writeRegister (u8 reg, u32 dat) {
  
     writeChar(reg);
     writeLong(dat);
 }
 
-void CS5530::setBit(u8 reg, u32 dat) {
+void CS5530::setBit (u8 reg, u32 dat) {
     u32 tmp = 0;
     u8 cmd = 0;
     switch (reg)
@@ -145,7 +145,7 @@ void CS5530::setBit(u8 reg, u32 dat) {
     writeLong(tmp);
 }
 
-void CS5530::resetBit(u8 reg, u32 dat) {
+void CS5530::resetBit (u8 reg, u32 dat) {
      u32 tmp = 0;
      u8 cmd = 0;
     switch (reg)
@@ -161,7 +161,7 @@ void CS5530::resetBit(u8 reg, u32 dat) {
     writeLong(tmp);
 }
 
-void CS5530::writeChar(u8 dat) {
+void CS5530::writeChar (u8 dat) {
  
     digitalWrite(_ss, LOW);
     _spi->beginTransaction(_spiSettings);
@@ -170,7 +170,7 @@ void CS5530::writeChar(u8 dat) {
     digitalWrite(_ss, HIGH);
 }
 
-void CS5530::writeLong(u32 dat) {
+void CS5530::writeLong (u32 dat) {
     int i;
     u8 tmp;
 
@@ -180,7 +180,7 @@ void CS5530::writeLong(u32 dat) {
     }
 }
  
-u32 CS5530::readRegister(u8 reg) {
+u32 CS5530::readRegister (u8 reg) {
     u32 dat;
     
     writeChar(reg);
@@ -189,7 +189,7 @@ u32 CS5530::readRegister(u8 reg) {
     return dat;
 }
 
-u32 CS5530::readLong(void)      {
+u32 CS5530::readLong (void)      {
     int i;
     u32 dat=0; 
     u8 currntByte = 0;
@@ -202,7 +202,7 @@ u32 CS5530::readLong(void)      {
     return dat;
 }
 
-u8 CS5530::readChar(void)     {
+u8 CS5530::readChar (void)     {
     u8 dat=0;
       
     digitalWrite(_ss, LOW);
@@ -214,10 +214,8 @@ u8 CS5530::readChar(void)     {
     return dat;
 }
 
-bool CS5530::isReady(void) {
-    //if(digitalRead(51) == 0) // Usar a porta SDI
-    if(0 == 0) // Usar a porta SDI
-    {
+bool CS5530::isReady (void) {
+    if (digitalRead(51) == 1) {
         return true;
     }
 
@@ -226,7 +224,7 @@ bool CS5530::isReady(void) {
 
 // Funções De Execução:
 
-u32 CS5530::readWeightsclae() { //Leitura do valor do ADC
+u32 CS5530::readWeightsclae () { //Leitura do valor do ADC
     u32 rec_data = 0;
     
     EAdStatus status;
@@ -262,7 +260,7 @@ u32 CS5530::readWeightsclae() { //Leitura do valor do ADC
    return status;
 }
 
-u8 CS5530::calibrate(u8 calibrate_type, int cfg_reg, int setup_reg) { //função calibração
+u8 CS5530::calibrate (u8 calibrate_type, int cfg_reg, int setup_reg) { //função calibração
     u32 calibrate_result;
     int waste_time, i;
     cfg_reg = (int)((calibrate_type % 2 == 1) ? (cfg_reg|REG_CONFIG_IS):(cfg_reg));
@@ -282,7 +280,7 @@ u8 CS5530::calibrate(u8 calibrate_type, int cfg_reg, int setup_reg) { //função
     return calibrate_result;
 }
 
-u32 CS5530::twoComplement(u32 n) { //caso seja complemento de dois.
+u32 CS5530::twoComplement (u32 n) { //caso seja complemento de dois.
     u32 negative = (n & (1UL << 23)) != 0;
     u32 native_int;
 
@@ -303,7 +301,7 @@ u8 CS5530::convert(u8 convert_type, u8 setup_reg_no, u8 reg_no, int word_rate) {
 
     switch (convert_type)
     {
-        case SINGLE_CONVERSION: cmd = CMD_CONVERSION_SIGLE; break;
+        case SINGLE_CONVERSION: cmd = CMD_CONVERSION_SINGLE; break;
         case CONTINUED_CONVERSION: cmd = CMD_CONVERSION_CONTINU; break; 
     }
 
@@ -329,6 +327,37 @@ u8 CS5530::convert(u8 convert_type, u8 setup_reg_no, u8 reg_no, int word_rate) {
     Serial.print("Resultado Final:"); Serial.println(final_result);
 
     return 1;
+}
+
+u32 CS5530::singleConversion() {
+
+    union {
+        char buffer [4];
+        u32 info;
+     } conversao2;
+
+    digitalWrite(_ss, LOW);
+
+    _spi->beginTransaction(_spiSettings);
+    _spi->transfer(CMD_CONVERSION_SINGLE);
+
+    while (digitalRead(50) == 1) { // wait for conversion 
+    }
+
+    _spi->transfer(0x00); // clear sdo flag
+
+    for (int i = 0; i < 4; i++) {
+        u8 data_transf = _spi->transfer(0x00);
+        conversao2.buffer[3 - i] = data_transf;
+    }
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+
+
+    Serial.println(conversao2.info);
+
+    return 0;
 }
 
 
