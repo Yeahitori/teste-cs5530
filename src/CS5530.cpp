@@ -332,7 +332,7 @@ u8 CS5530::convert(u8 convert_type, u8 setup_reg_no, u8 reg_no, int word_rate) {
 u32 CS5530::singleConversion() {
 
     union {
-        char buffer [4];
+        char buffer [3];
         u32 info;
      } conversao2;
 
@@ -346,18 +346,23 @@ u32 CS5530::singleConversion() {
 
     _spi->transfer(0x00); // clear sdo flag
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         u8 data_transf = _spi->transfer(0x00);
-        conversao2.buffer[3 - i] = data_transf;
+        conversao2.buffer[2 - i] = data_transf;
     }
 
+    char flag_over_range = _spi->transfer(0x00);
     _spi->endTransaction();
     digitalWrite(_ss, HIGH);
 
+    if (flag_over_range == OVER_RANGE_FLAG) {
+        Serial.println("of");
+    }
+    else {
+        Serial.println(conversao2.info);
+    }
 
-    Serial.println(conversao2.info);
-
-    return 0;
+    return conversao2.info;
 }
 
 

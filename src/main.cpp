@@ -36,42 +36,21 @@ void setup() {
     else
         Serial.println("Starting CS5530 failed");
 
-    //  cell.CS5530_Write_Reg(CMD_GAIN_WRITE, 0x3);
 
     u32 tmp = cell.readRegister(CMD_CONFIG_READ);
     Serial.print("CONFIG Register:");
     Serial.println(tmp, BIN);
 
-    //u32 tmpdata = REG_CONFIG_UNIPOLAR | REG
 
     cell.writeRegister(CMD_CONFIG_WRITE, REG_CONFIG_UNIPOLAR);
-
-  
-    //cell.Convert(CONTINUED_CONVERSION, 1, 1, (int)WORD_RATE_3200SPS );
-
-    u32 cmpl = cell.twoComplement(0xFFFFFFFF);
-
-
-    cell.writeChar(CMD_CONVERSION_CONTINU);
-    cell.writeRegister(CMD_OFFSET_WRITE, cmpl);
-	
+    cell.writeRegister(CMD_GAIN_WRITE, GAINX64);
+    cell.writeRegister(CMD_OFFSET_WRITE, 4);
 
 }
 
 
 void loop() {
-    i32 recData = cell.readWeightsclae();
-
-    if(recData > 0) {
-     value = 0.97 * value + 0.03 * recData;	// running average		
-     delay(5); 
-    }
-
-    if(millis() > startTime){
-      Serial.println (recData);
-      startTime = millis()+200;
-    }
-
- }
+    i32 recData = cell.singleConversion();
+}
 
 
