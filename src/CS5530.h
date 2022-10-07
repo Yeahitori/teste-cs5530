@@ -242,11 +242,13 @@ public:
     bool reset (void);                            // Função de RESET
     u32 readWeightsclae ();                       // Define a chamada de Leitura da conversao
     u32 singleConversion();
+    u32 readAverage (int n_conversions = 1, u32 rate = WORD_RATE_100SPS);
     //===================================================================================================================================================//
-
+private:
     SPISettings _spiSettings;
     SPIClass *_spi;
     int _ss;
+    bool is_converting;
 };
 
 //===================================================================================================================================================//

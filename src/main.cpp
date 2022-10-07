@@ -41,16 +41,11 @@ void setup() {
     Serial.print("CONFIG Register:");
     Serial.println(tmp, BIN);
 
-
-    cell.writeRegister(CMD_CONFIG_WRITE, REG_CONFIG_UNIPOLAR);
-    cell.writeRegister(CMD_GAIN_WRITE, GAINX64);
-    cell.writeRegister(CMD_OFFSET_WRITE, 4);
-
+    cell.writeRegister(CMD_OFFSET_WRITE, 2 << 10); // evita overrage
 }
 
 
 void loop() {
-    i32 recData = cell.singleConversion();
 }
 
 

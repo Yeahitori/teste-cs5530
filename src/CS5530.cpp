@@ -4,6 +4,7 @@
 #include "CS5530.h"
 #include "Arduino.h"
 #include <stdio.h>
+#include <assert.h>
 //#include <intrin.h> //Library from _nop operation. Refer to "https://docs.microsoft.com/pt-br/cpp/intrinsics/nop?view=msvc-170"
 
 CS5530::CS5530():
@@ -334,7 +335,7 @@ u32 CS5530::singleConversion() {
     union {
         char buffer [3];
         u32 info;
-     } conversao2;
+     } conversao;
 
     digitalWrite(_ss, LOW);
 
@@ -345,24 +346,64 @@ u32 CS5530::singleConversion() {
     }
 
     _spi->transfer(0x00); // clear sdo flag
-
-    for (int i = 0; i < 3; i++) {
-        u8 data_transf = _spi->transfer(0x00);
-        conversao2.buffer[2 - i] = data_transf;
-    }
-
+    conversao.buffer[2] = _spi->transfer(0x00);
+    conversao.buffer[1] = _spi->transfer(0x00);
+    conversao.buffer[0] = _spi->transfer(0x00);
     char flag_over_range = _spi->transfer(0x00);
+
     _spi->endTransaction();
     digitalWrite(_ss, HIGH);
 
     if (flag_over_range == OVER_RANGE_FLAG) {
-        Serial.println("of");
+        return 1;
     }
     else {
-        Serial.println(conversao2.info);
+        return 0;
     }
 
-    return conversao2.info;
+    return conversao.info;
+}
+
+u32 CS5530::readAverage (int n_conversions, u32 rate) {
+    assert(n_conversions > 0);
+    union {
+        u8 buff [3];
+        u32 val;
+    } conversao;
+    u32 sum;
+
+    u32 config_register = readRegister(CMD_CONFIG_READ);
+    config_register |= rate;
+
+    writeRegister(CMD_CONFIG_WRITE, config_register);
+
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    writeChar(CMD_CONVERSION_CONTINU);
+
+    for (int i = 0; i < n_conversions; i++) {
+        while (digitalRead(50) == 1) {
+        }
+
+        conversao.buff[2] = _spi->transfer(0x00);
+        conversao.buff[1] = _spi->transfer(0x00);
+        conversao.buff[0] = _spi->transfer(0x00);
+
+        sum += conversao.val;
+    }
+
+    while (digitalRead(50) == 1) {
+    }
+    
+    // encerrando as conversoes
+    _spi->transfer(0xFF);
+    _spi->transfer16(0x0);
+    _spi->transfer16(0x0);
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+    
+    return sum / n_conversions;
 }
 
 
