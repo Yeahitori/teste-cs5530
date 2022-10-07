@@ -383,14 +383,21 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
     writeChar(CMD_CONVERSION_CONTINU);
 
     for (int i = 0; i < n_conversions; i++) {
+        u8 overrage_flag;
         while (digitalRead(50) == 1) {
         }
+
+        _spi->transfer(0x00); // clear sdo flag
 
         conversao.buff[2] = _spi->transfer(0x00);
         conversao.buff[1] = _spi->transfer(0x00);
         conversao.buff[0] = _spi->transfer(0x00);
 
-        sum += conversao.val;
+        overrage_flag = _spi->transfer(0x00);
+        if (overrage_flag == 4)
+            Serial.println("Occorreu overrange");
+        else
+            sum += conversao.val;
     }
 
     while (digitalRead(50) == 1) {

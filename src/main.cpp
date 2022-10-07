@@ -36,7 +36,6 @@ void setup() {
     else
         Serial.println("Starting CS5530 failed");
 
-
     u32 tmp = cell.readRegister(CMD_CONFIG_READ);
     Serial.print("CONFIG Register:");
     Serial.println(tmp, BIN);
@@ -46,6 +45,8 @@ void setup() {
 
 
 void loop() {
+    u32 conversao = cell.readAverage(10, WORD_RATE_100SPS);
+    Serial.println(conversao);
 }
 
 
