@@ -377,10 +377,10 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
 
     writeRegister(CMD_CONFIG_WRITE, config_register);
 
+    writeChar(CMD_CONVERSION_CONTINU);
     digitalWrite(_ss, LOW);
     _spi->beginTransaction(_spiSettings);
 
-    writeChar(CMD_CONVERSION_CONTINU);
 
     for (int i = 0; i < n_conversions; i++) {
         u8 overrage_flag;
@@ -388,16 +388,17 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
         }
 
         _spi->transfer(0x00); // clear sdo flag
-
         conversao.buff[2] = _spi->transfer(0x00);
         conversao.buff[1] = _spi->transfer(0x00);
         conversao.buff[0] = _spi->transfer(0x00);
-
         overrage_flag = _spi->transfer(0x00);
-        if (overrage_flag == 4)
-            Serial.println("Occorreu overrange");
+
+        if (overrage_flag == 4) {
+            Serial.print("OVER RANGE ");
+            Serial.println(conversao.val);
+        }
         else
-            sum += conversao.val;
+            Serial.println(conversao.val);
     }
 
     while (digitalRead(50) == 1) {
@@ -409,8 +410,7 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
     _spi->transfer16(0x0);
     _spi->endTransaction();
     digitalWrite(_ss, HIGH);
-    
-    return sum / n_conversions;
+    return 0;
 }
 
 

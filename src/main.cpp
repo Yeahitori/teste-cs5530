@@ -36,17 +36,19 @@ void setup() {
     else
         Serial.println("Starting CS5530 failed");
 
+    cell.writeRegister(CMD_CONFIG_WRITE, REG_CONFIG_UNIPOLAR);
     u32 tmp = cell.readRegister(CMD_CONFIG_READ);
     Serial.print("CONFIG Register:");
     Serial.println(tmp, BIN);
 
-    cell.writeRegister(CMD_OFFSET_WRITE, 2 << 10); // evita overrage
+    cell.writeRegister(CMD_CONFIG_WRITE, REG_CONFIG_UNIPOLAR);
+
+    // cell.writeRegister(CMD_GAIN_WRITE, 0x00F000);
 }
 
 
 void loop() {
-    u32 conversao = cell.readAverage(10, WORD_RATE_100SPS);
-    Serial.println(conversao);
+    cell.readAverage(100, WORD_RATE_6P25SPS);
 }
 
 
