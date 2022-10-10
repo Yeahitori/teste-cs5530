@@ -20,6 +20,7 @@ https://github.com/yasir-shahzad/CS5530
 
 #include <avr/pgmspace.h>
 #include "SPI.h"
+#include <assert.h>
 #include "CS5530.h"
 
 
@@ -36,14 +37,9 @@ void setup() {
     else
         Serial.println("Starting CS5530 failed");
 
-    cell.writeRegister(CMD_CONFIG_WRITE, REG_CONFIG_UNIPOLAR);
-    u32 tmp = cell.readRegister(CMD_CONFIG_READ);
-    Serial.print("CONFIG Register:");
-    Serial.println(tmp, BIN);
-
-    cell.writeRegister(CMD_CONFIG_WRITE, REG_CONFIG_UNIPOLAR);
-
-    // cell.writeRegister(CMD_GAIN_WRITE, 0x00F000);
+    cell.setConfigurationRegister(REG_CONFIG_UNIPOLAR);
+    Serial.println(cell.configurationRegister(), BIN);
+    cell.setGain(1 << 10);
 }
 
 

@@ -227,22 +227,21 @@ public:
     void setPin (int ss = CS5530_DEFAULT_SS_PIN); // Função SETPIN do Controlador, caso necessário usar para definir o Pino em outro Arduino
     void setSPI (SPIClass &spi);                  // Inicia o SPI do controlador
     void setSPIFrequency (u32);                   // Define a Frequencia do SPI (CS5530 suporta no maximo 2Mhz);
+    void setOffset (u32 offset);
+    void setGain (u32 gain);
+    void setConfigurationRegister (u32 config_register);
     u32 twoComplement (u32);                      // Define como Complemento de 2 a conversão
     u8 readChar (void);                           // Inicia a Leitura de um vetor de caracteres (registrador) como char
     u32 readLong (void);                          // Inicia a Leitura de um vetor de inteiros (registrador) como long
-    u32 readRegister (u8);                        // Inicia a Leitura de um registrador
-    u8 convert (u8, u8, u8, int);                 // Define a conversao (onde armazenara)
-    u8 calibrate (u8, int, int);                  // Define a calibração como u32
     void writeLong (u32);                         // Define a escrita de uma cadeia de inteiros do tipo long, 32 bits
     void writeChar (u8);                          // Escreve uma cadeia de inteiros de 8 bits
-    void writeRegister (u8, u32);                 // Escreve no registrador 8 ou 32 bits como cadeia de inteiros
-    void setBit (u8, u32);                        // Define os Bits
-    void resetBit (u8, u32);                      // Redefine os Bits
     bool isReady (void);                          // Define que o conversor está pronto
     bool reset (void);                            // Função de RESET
-    u32 readWeightsclae ();                       // Define a chamada de Leitura da conversao
     u32 singleConversion();
     u32 readAverage (int n_conversions = 1, u32 rate = WORD_RATE_100SPS);
+    u32 gain (); // getter
+    u32 offset (); // getter 
+    u32 configurationRegister (); // getter
     //===================================================================================================================================================//
 private:
     SPISettings _spiSettings;

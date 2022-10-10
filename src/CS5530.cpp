@@ -84,7 +84,7 @@ bool CS5530::reset(void) {
     // VALIDED BY ANALYSER
     
     // Reseting CS5530
-    writeRegister(CMD_CONFIG_WRITE,  REG_CONFIG_RS);    
+    setConfigurationRegister(REG_CONFIG_RS);
     // Write Logical Level 1 on bit adressed at 29th position on Configuration Register at CS5530;
 
     //A função __nop é equivalente à instrução do computador NOP
@@ -96,11 +96,11 @@ bool CS5530::reset(void) {
     According to Arduino docummentation, is better to use function "millis()", due it do not stall controller during operation, as delay do.
     Refer to "https://www.arduino.cc/reference/pt/language/functions/time/millis/" */
 
-    writeRegister(CMD_CONFIG_WRITE, CMD_NULL);
+    setConfigurationRegister(0x000000);
     //delayMicroseconds(1);
     void __nop();
     
-    tmp = readRegister(CMD_CONFIG_READ); 
+    tmp = configurationRegister();
     //delayMicroseconds(1);
     void __nop();
 
@@ -123,45 +123,6 @@ Esta Operação Está validada.
 */
 
 // Funções Operacionais:
-
-void CS5530::writeRegister (u8 reg, u32 dat) {
- 
-    writeChar(reg);
-    writeLong(dat);
-}
-
-void CS5530::setBit (u8 reg, u32 dat) {
-    u32 tmp = 0;
-    u8 cmd = 0;
-    switch (reg)
-    {
-        case CMD_GAIN_WRITE:   cmd = CMD_GAIN_READ; break; 
-        case CMD_OFFSET_WRITE: cmd = CMD_OFFSET_READ; break;		
-        case CMD_CONFIG_WRITE: cmd = CMD_CONFIG_READ; break; 
-    }
-
-    tmp =  readRegister(cmd);
-    tmp |= dat;
-    writeChar(reg);
-    writeLong(tmp);
-}
-
-void CS5530::resetBit (u8 reg, u32 dat) {
-     u32 tmp = 0;
-     u8 cmd = 0;
-    switch (reg)
-    {
-        case CMD_GAIN_WRITE:   cmd = CMD_GAIN_READ; break; 
-        case CMD_OFFSET_WRITE: cmd = CMD_OFFSET_READ; break;		
-        case CMD_CONFIG_WRITE: cmd = CMD_CONFIG_READ; break; 
-    }
-
-    tmp =  readRegister(cmd);
-    tmp &= ~dat;
-    writeChar(reg);
-    writeLong(tmp);
-}
-
 void CS5530::writeChar (u8 dat) {
  
     digitalWrite(_ss, LOW);
@@ -172,35 +133,43 @@ void CS5530::writeChar (u8 dat) {
 }
 
 void CS5530::writeLong (u32 dat) {
-    int i;
-    u8 tmp;
+    union {
+        char buffer [4];
+        u32 valor;
+    } temp;
+    temp.valor = dat;
 
-    for(i=3; i>=0; i--) {
-        tmp = (u8)( (dat >> (8*i)) & 0xff);
-        writeChar(tmp);
-    }
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    _spi->transfer(temp.buffer[3]);
+    _spi->transfer(temp.buffer[2]);
+    _spi->transfer(temp.buffer[1]);
+    _spi->transfer(temp.buffer[0]);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
 }
  
-u32 CS5530::readRegister (u8 reg) {
-    u32 dat;
-    
-    writeChar(reg);
-    dat = readLong();
-    
-    return dat;
-}
 
 u32 CS5530::readLong (void)      {
-    int i;
-    u32 dat=0; 
-    u8 currntByte = 0;
-   
-    for(i=0; i<4; i++) {
-        dat    <<=    8;
-        dat    |= readChar();
-    }
+    union {
+        char buffer [4];
+        u32 valor;
+    } temp;
 
-    return dat;
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    temp.buffer[3] = _spi->transfer(0x00);
+    temp.buffer[2] = _spi->transfer(0x00);
+    temp.buffer[1] = _spi->transfer(0x00);
+    temp.buffer[0] = _spi->transfer(0x00);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+
+    return temp.valor;
 }
 
 u8 CS5530::readChar (void)     {
@@ -225,62 +194,6 @@ bool CS5530::isReady (void) {
 
 // Funções De Execução:
 
-u32 CS5530::readWeightsclae () { //Leitura do valor do ADC
-    u32 rec_data = 0;
-    
-    EAdStatus status;
-
-   if(isReady()==false)
-   {
-       status = E_AD_STATUS_BUSY;
-       Serial.println("Ocupado!");
-       return -2;
-   }
-   else
-   {    
-       rec_data = readRegister(CMD_NULL);
-       if((rec_data &  REG_DATA_OF) == 0)
-       {
-           rec_data &= 0xFFFFFF00;
-           
-           rec_data = rec_data >> 8;
-
-           status =  E_AD_STATUS_READY;
-           
-           //Serial.println("Pronto!");
-           return rec_data;
-       }
-       else
-       {
-             status =  E_AD_STATUS_OVERFLOW;
-             Serial.println("Overflow");
-             return -1;
-       }
-   }
-
-   return status;
-}
-
-u8 CS5530::calibrate (u8 calibrate_type, int cfg_reg, int setup_reg) { //função calibração
-    u32 calibrate_result;
-    int waste_time, i;
-    cfg_reg = (int)((calibrate_type % 2 == 1) ? (cfg_reg|REG_CONFIG_IS):(cfg_reg));
-    u8 cmd,read_reg;
-
-    writeRegister(CMD_CONFIG_WRITE, cfg_reg);
-    writeChar(cmd);
-
-    for(waste_time = WASTE_TIME; waste_time > 0; waste_time--);
-
-    calibrate_result = readRegister(read_reg);
-
-    /*Serial.print("Resultado da Calibracao: ");
-    Serial.printf("%x ", calibrate_result);
-    Serial.print("\n");*/
-
-    return calibrate_result;
-}
-
 u32 CS5530::twoComplement (u32 n) { //caso seja complemento de dois.
     u32 negative = (n & (1UL << 23)) != 0;
     u32 native_int;
@@ -292,50 +205,12 @@ u32 CS5530::twoComplement (u32 n) { //caso seja complemento de dois.
     return native_int;
 }
 
-u8 CS5530::convert(u8 convert_type, u8 setup_reg_no, u8 reg_no, int word_rate) { // serve para conversao caso complemento de dois
-    Serial.print("Preparando para a conversao...\n");
-    u32 final_result = 0;
-    int waste_time, i;
-    u32 cfg_reg =  (u32)REG_CONFIG_VRS;
-    int setup_reg = ((setup_reg_no % 2 == 1) ? ((word_rate) << 16) : word_rate);
-    u8 cmd;
-
-    switch (convert_type)
-    {
-        case SINGLE_CONVERSION: cmd = CMD_CONVERSION_SINGLE; break;
-        case CONTINUED_CONVERSION: cmd = CMD_CONVERSION_CONTINU; break; 
-    }
-
-    writeRegister(CMD_CONFIG_WRITE, cfg_reg);
-    void __nop();;//fazer if com nop;
-    writeChar(cmd);
-    Serial.print("Conversao Iniciada...\n");
-
-    void __nop();
-    u8 test = 0;
-    test = readChar();   // wastercycles
-    final_result = readLong();
-
-
-    Serial.print("Resultado Bruto:"); Serial.println(final_result);
-    //Serial.print("Resultado Bruto:"); Serial.println(final_result);
-
-    final_result = twoComplement(final_result);
-    Serial.print("Resultado Final:"); Serial.println(final_result);
-    //Serial.print("Resultado Final:"); Serial.println(final_result);
-
-    final_result = final_result * 500 / 0x7fffff;
-    Serial.print("Resultado Final:"); Serial.println(final_result);
-
-    return 1;
-}
-
 u32 CS5530::singleConversion() {
-
     union {
         char buffer [3];
         u32 info;
-     } conversao;
+    } conversao;
+    char flag_over_range;
 
     digitalWrite(_ss, LOW);
 
@@ -349,7 +224,7 @@ u32 CS5530::singleConversion() {
     conversao.buffer[2] = _spi->transfer(0x00);
     conversao.buffer[1] = _spi->transfer(0x00);
     conversao.buffer[0] = _spi->transfer(0x00);
-    char flag_over_range = _spi->transfer(0x00);
+    flag_over_range = _spi->transfer(0x00);
 
     _spi->endTransaction();
     digitalWrite(_ss, HIGH);
@@ -372,10 +247,11 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
     } conversao;
     u32 sum;
 
-    u32 config_register = readRegister(CMD_CONFIG_READ);
+    u32 config_register = configurationRegister();
     config_register |= rate;
 
-    writeRegister(CMD_CONFIG_WRITE, config_register);
+    setConfigurationRegister(config_register);
+
 
     writeChar(CMD_CONVERSION_CONTINU);
     digitalWrite(_ss, LOW);
@@ -413,7 +289,128 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
     return 0;
 }
 
+void CS5530::setOffset (u32 offset) {
+    union {
+        char buffer [4];
+        u32 valor;
+    } temp;
+    temp.valor = offset;
 
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    _spi->transfer(CMD_OFFSET_WRITE);
+    _spi->transfer(temp.buffer[3]);
+    _spi->transfer(temp.buffer[2]);
+    _spi->transfer(temp.buffer[1]);
+    _spi->transfer(temp.buffer[0]);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+}
+
+void CS5530::setGain (u32 gain) {
+    union {
+        char buffer [4];
+        u32 val;
+    } temp;
+    temp.val = gain;
+
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+     
+    _spi->transfer(CMD_GAIN_WRITE);
+    _spi->transfer(temp.buffer[3]);
+    _spi->transfer(temp.buffer[2]);
+    _spi->transfer(temp.buffer[1]);
+    _spi->transfer(temp.buffer[0]);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+}
+
+void CS5530::setConfigurationRegister (u32 config_register) {
+    union {
+        char buffer [4];
+        u32 val;
+    } temp;
+    temp.val = config_register;
+
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+     
+    _spi->transfer(CMD_CONFIG_WRITE);
+    _spi->transfer(temp.buffer[3]);
+    _spi->transfer(temp.buffer[2]);
+    _spi->transfer(temp.buffer[1]);
+    _spi->transfer(temp.buffer[0]);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+}
+
+u32 CS5530::gain () {
+    union {
+        char buffer [4];
+        u32 val;
+    } temp;
+
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    _spi->transfer(CMD_GAIN_READ);
+    temp.buffer[3] = _spi->transfer(0x00);
+    temp.buffer[2] = _spi->transfer(0x00);
+    temp.buffer[1] = _spi->transfer(0x00);
+    temp.buffer[0] = _spi->transfer(0x00);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+
+    return temp.val;
+}
+
+u32 CS5530::offset () {
+    union {
+        char buffer [4];
+        u32 val;
+    } temp;
+
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    _spi->transfer(CMD_OFFSET_READ);
+    temp.buffer[3] = _spi->transfer(0x00);
+    temp.buffer[2] = _spi->transfer(0x00);
+    temp.buffer[1] = _spi->transfer(0x00);
+    temp.buffer[0] = _spi->transfer(0x00);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+
+    return temp.val;
+}
+
+u32 CS5530::configurationRegister () {
+    union {
+        char buffer [4];
+        u32 val;
+    } temp;
+
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    _spi->transfer(CMD_CONFIG_READ);
+    temp.buffer[3] = _spi->transfer(0x00);
+    temp.buffer[2] = _spi->transfer(0x00);
+    temp.buffer[1] = _spi->transfer(0x00);
+    temp.buffer[0] = _spi->transfer(0x00);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
+
+    return temp.val;
+}
 /*
 
 Operação: 
