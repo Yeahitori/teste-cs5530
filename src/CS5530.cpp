@@ -15,35 +15,29 @@ _spi(&CS5530_DEFAULT_SPI), _ss(CS5530_DEFAULT_SS_PIN)
   _spi->begin();
 }
 
-int CS5530::begin()
-{
-  // setup pins
-  pinMode(_ss, OUTPUT);
+int CS5530::begin () {
+    // setup pins
+    pinMode(_ss, OUTPUT);
 
-   digitalWrite(_ss, LOW);
+    digitalWrite(_ss, LOW);
    
    
-  // set SS high
-  digitalWrite(_ss, HIGH);
+    digitalWrite(_ss, HIGH);
 
-  // start SPI
-  _spi->begin();
+    _spi->begin();
 
-  return 1;
+    return 1;
 }
 
-void CS5530::setPin(int ss)
-{
+void CS5530::setPin (int ss) {
   _ss = ss;
 }
 
-void CS5530::setSPI(SPIClass& spi)
-{
+void CS5530::setSPI (SPIClass& spi) {
   _spi = &spi;
 }
 
-void CS5530::setSPIFrequency(u32 frequency)
-{
+void CS5530::setSPIFrequency (u32 frequency) {
   _spiSettings = SPISettings(frequency, MSBFIRST, SPI_MODE0);
 }
 
@@ -71,118 +65,29 @@ void CS5530::setSPIFrequency(u32 frequency)
 */
 //Inicia o reset do CS5530 - Check OK
 bool CS5530::reset(void) {
-    int i;
-    u32 tmp;
-    
-    //Initilizing SPI port (Cont 15 clock cycles at leats), writing 1111 1111 (0XFF) at config command register
-    for(i=0;i<20;i++) {
-      writeChar(CMD_SYNC1);
+    digitalWrite(_ss, LOW);
+    _spi->beginTransaction(_spiSettings);
+
+    for(int i=0;i<15;i++) {
+        _spi->transfer(CMD_SYNC1);
     }
-     
-    // Then, write 1111 1111 (0xFE) at SYNC0 register;
-    writeChar(CMD_SYNC0);
-    // VALIDED BY ANALYSER
+    _spi->transfer(CMD_SYNC0);
+
+    _spi->endTransaction();
+    digitalWrite(_ss, HIGH);
     
-    // Reseting CS5530
     setConfigurationRegister(REG_CONFIG_RS);
-    // Write Logical Level 1 on bit adressed at 29th position on Configuration Register at CS5530;
 
-    //A função __nop é equivalente à instrução do computador NOP
-            void __nop();                     
+    delay(1);
 
-
-    //delayMicroseconds(1);  
-    /* //At these setup, Wait 1 milli seconds// (Calculate these Delay according to selected clock of SPI.) If 2Mhz == 1 cycle == 0,0005 ms == 0,5us == 500ns.
-    According to Arduino docummentation, is better to use function "millis()", due it do not stall controller during operation, as delay do.
-    Refer to "https://www.arduino.cc/reference/pt/language/functions/time/millis/" */
-
-    setConfigurationRegister(0x000000);
-    //delayMicroseconds(1);
-    void __nop();
-    
-    tmp = configurationRegister();
-    //delayMicroseconds(1);
-    void __nop();
-
-    if(tmp & REG_CONFIG_RV) {
+    if(configurationRegister() & REG_CONFIG_RV) {
      return true;
     }
 
   return false;
 }
-/*
 
-What is expected to:
-Completing the reset cycle, initializes the on-chip registers to the following states:
 
-Configuration Register:     00000000(H) (0000 0000 0000 0000 0000 0000 0000 0000 BIN)
-Offset Register:            00000000(H) (0000 0000 0000 0000 0000 0000 0000 0000 BIN)
-Gain Register               01000000(H) (0001 0000 0000 0000 0000 0000 0000 0000 BIN)
-
-Esta Operação Está validada.
-*/
-
-// Funções Operacionais:
-void CS5530::writeChar (u8 dat) {
- 
-    digitalWrite(_ss, LOW);
-    _spi->beginTransaction(_spiSettings);
-    SPI.transfer(dat & 0xFF); 
-    _spi->endTransaction();
-    digitalWrite(_ss, HIGH);
-}
-
-void CS5530::writeLong (u32 dat) {
-    union {
-        char buffer [4];
-        u32 valor;
-    } temp;
-    temp.valor = dat;
-
-    digitalWrite(_ss, LOW);
-    _spi->beginTransaction(_spiSettings);
-
-    _spi->transfer(temp.buffer[3]);
-    _spi->transfer(temp.buffer[2]);
-    _spi->transfer(temp.buffer[1]);
-    _spi->transfer(temp.buffer[0]);
-
-    _spi->endTransaction();
-    digitalWrite(_ss, HIGH);
-}
- 
-
-u32 CS5530::readLong (void)      {
-    union {
-        char buffer [4];
-        u32 valor;
-    } temp;
-
-    digitalWrite(_ss, LOW);
-    _spi->beginTransaction(_spiSettings);
-
-    temp.buffer[3] = _spi->transfer(0x00);
-    temp.buffer[2] = _spi->transfer(0x00);
-    temp.buffer[1] = _spi->transfer(0x00);
-    temp.buffer[0] = _spi->transfer(0x00);
-
-    _spi->endTransaction();
-    digitalWrite(_ss, HIGH);
-
-    return temp.valor;
-}
-
-u8 CS5530::readChar (void)     {
-    u8 dat=0;
-      
-    digitalWrite(_ss, LOW);
-    _spi->beginTransaction(_spiSettings);
-    dat = SPI.transfer(CMD_NULL);
-    _spi->endTransaction();
-    digitalWrite(_ss, HIGH);
-      
-    return dat;
-}
 
 bool CS5530::isReady (void) {
     if (digitalRead(51) == 1) {
@@ -191,8 +96,6 @@ bool CS5530::isReady (void) {
 
     return false;
 }
-
-// Funções De Execução:
 
 u32 CS5530::twoComplement (u32 n) { //caso seja complemento de dois.
     u32 negative = (n & (1UL << 23)) != 0;
@@ -253,10 +156,10 @@ u32 CS5530::readAverage (int n_conversions, u32 rate) {
     setConfigurationRegister(config_register);
 
 
-    writeChar(CMD_CONVERSION_CONTINU);
     digitalWrite(_ss, LOW);
     _spi->beginTransaction(_spiSettings);
 
+    _spi->transfer(CMD_CONVERSION_CONTINU);
 
     for (int i = 0; i < n_conversions; i++) {
         u8 overrage_flag;
@@ -411,16 +314,3 @@ u32 CS5530::configurationRegister () {
 
     return temp.val;
 }
-/*
-
-Operação: 
-1° Sincronizar o SPI
-2° Resetar o registrador de comando
-3° Definir os parametros de operação; Ex: Bipolar, continua, Complemento de dois, etc.
-4° Calibrar;
-5° verificar o resultado da calibração;
-6° Iniciar a conversão;
-7° ler o resultado da conversão.
-8° plotar o resultado da conversão
-
-*/

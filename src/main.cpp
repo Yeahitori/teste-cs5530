@@ -37,14 +37,11 @@ void setup() {
     else
         Serial.println("Starting CS5530 failed");
 
-    cell.setConfigurationRegister(REG_CONFIG_UNIPOLAR);
-    Serial.println(cell.configurationRegister(), BIN);
-    cell.setGain(1 << 10);
+    // cell.setConfigurationRegister(REG_CONFIG_UNIPOLAR | (1 << 25));
+    // cell.setGain(1 << 10);
 }
 
 
 void loop() {
     cell.readAverage(100, WORD_RATE_6P25SPS);
 }
-
-

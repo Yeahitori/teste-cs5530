@@ -231,10 +231,6 @@ public:
     void setGain (u32 gain);
     void setConfigurationRegister (u32 config_register);
     u32 twoComplement (u32);                      // Define como Complemento de 2 a conversão
-    u8 readChar (void);                           // Inicia a Leitura de um vetor de caracteres (registrador) como char
-    u32 readLong (void);                          // Inicia a Leitura de um vetor de inteiros (registrador) como long
-    void writeLong (u32);                         // Define a escrita de uma cadeia de inteiros do tipo long, 32 bits
-    void writeChar (u8);                          // Escreve uma cadeia de inteiros de 8 bits
     bool isReady (void);                          // Define que o conversor está pronto
     bool reset (void);                            // Função de RESET
     u32 singleConversion();
